@@ -1,42 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Military Command Interface Design System */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Military Color Palette */
+    --background: 120 8% 8%;
+    --foreground: 120 5% 92%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 120 8% 12%;
+    --card-foreground: 120 5% 92%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 120 8% 10%;
+    --popover-foreground: 120 5% 92%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 85 45% 35%;
+    --primary-foreground: 120 5% 92%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 120 8% 18%;
+    --secondary-foreground: 120 5% 85%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 120 8% 15%;
+    --muted-foreground: 120 5% 65%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 85 45% 45%;
+    --accent-foreground: 120 8% 8%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 120 5% 92%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --warning: 40 95% 60%;
+    --warning-foreground: 120 8% 8%;
 
-    --radius: 0.5rem;
+    --success: 120 60% 40%;
+    --success-foreground: 120 5% 92%;
+
+    --border: 120 8% 20%;
+    --input: 120 8% 15%;
+    --ring: 85 45% 35%;
+
+    --radius: 0.375rem;
+
+    /* Military Gradients */
+    --gradient-command: linear-gradient(135deg, hsl(120 8% 12%), hsl(120 8% 8%));
+    --gradient-tactical: linear-gradient(90deg, hsl(85 45% 35%), hsl(85 45% 45%));
+    --gradient-alert: linear-gradient(135deg, hsl(0 75% 55%), hsl(0 75% 45%));
+    --gradient-success: linear-gradient(135deg, hsl(120 60% 40%), hsl(120 60% 35%));
+
+    /* Shadows */
+    --shadow-command: 0 8px 32px -8px hsl(120 8% 4% / 0.6);
+    --shadow-tactical: 0 4px 16px -4px hsl(85 45% 35% / 0.3);
+    --shadow-glow: 0 0 24px hsl(85 45% 35% / 0.4);
+
+    /* Typography */
+    --font-system: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    /* Animations */
+    --transition-command: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s ease;
 
     --sidebar-background: 0 0% 98%;
 
@@ -100,6 +126,81 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-system;
+    background: var(--gradient-command);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  /* Command Interface Components */
+  .command-panel {
+    @apply bg-card border border-border rounded-lg;
+    background: var(--gradient-command);
+    box-shadow: var(--shadow-command);
+  }
+
+  .tactical-button {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium;
+    @apply transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    @apply disabled:pointer-events-none disabled:opacity-50;
+    background: var(--gradient-tactical);
+    color: hsl(var(--primary-foreground));
+    padding: 0.5rem 1rem;
+    box-shadow: var(--shadow-tactical);
+  }
+
+  .tactical-button:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-glow);
+  }
+
+  .alert-button {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium;
+    @apply transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    @apply disabled:pointer-events-none disabled:opacity-50;
+    background: var(--gradient-alert);
+    color: hsl(var(--destructive-foreground));
+    padding: 0.5rem 1rem;
+  }
+
+  .alert-button:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+  }
+
+  .status-indicator {
+    @apply w-3 h-3 rounded-full;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .status-active {
+    background: var(--gradient-success);
+  }
+
+  .status-warning {
+    background: hsl(var(--warning));
+  }
+
+  .status-danger {
+    background: var(--gradient-alert);
+  }
+
+  .military-grid {
+    background-image: 
+      linear-gradient(hsl(var(--border)) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .glow-text {
+    text-shadow: 0 0 10px hsl(var(--primary) / 0.5);
+  }
+
+  .command-header {
+    @apply text-2xl font-bold tracking-tight;
+    font-family: var(--font-mono);
+    color: hsl(var(--primary));
+    text-shadow: 0 0 10px hsl(var(--primary) / 0.3);
   }
 }
