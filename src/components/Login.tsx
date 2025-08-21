@@ -32,8 +32,8 @@ export const Login = ({ onLogin }: LoginProps) => {
       
       <Card className="w-full max-w-md command-panel relative z-10">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
-            <Shield className="w-8 h-8 text-primary" />
+          <div className="mx-auto w-16 h-16 flex items-center justify-center">
+            <img src="/military-logo.svg" alt="Logo Militaire" className="w-16 h-16" />
           </div>
           <div>
             <CardTitle className="command-header text-2xl">ACCÈS SÉCURISÉ</CardTitle>

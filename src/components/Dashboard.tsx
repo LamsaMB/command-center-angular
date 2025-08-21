@@ -18,13 +18,15 @@ import {
 import { CreateMission } from './CreateMission';
 import { MissionMap } from './MissionMap';
 import { AlertsPanel } from './AlertsPanel';
+import { MissionDetails } from './MissionDetails';
 
 interface DashboardProps {
   onLogout: () => void;
 }
 
 export const Dashboard = ({ onLogout }: DashboardProps) => {
-  const [activeView, setActiveView] = useState<'overview' | 'create-mission' | 'map' | 'alerts'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'create-mission' | 'map' | 'alerts' | 'mission-details'>('overview');
+  const [selectedMission, setSelectedMission] = useState<any>(null);
   const [activeMissions, setActiveMissions] = useState([
     {
       id: 'OP-001',
@@ -43,6 +45,11 @@ export const Dashboard = ({ onLogout }: DashboardProps) => {
     { label: 'Systèmes Opérationnels', value: '98%', icon: Activity, status: 'active' }
   ];
 
+  const handleMissionClick = (mission: any) => {
+    setSelectedMission(mission);
+    setActiveView('mission-details');
+  };
+
   const renderContent = () => {
     switch (activeView) {
       case 'create-mission':
@@ -51,6 +58,13 @@ export const Dashboard = ({ onLogout }: DashboardProps) => {
         return <MissionMap />;
       case 'alerts':
         return <AlertsPanel />;
+      case 'mission-details':
+        return selectedMission ? (
+          <MissionDetails 
+            mission={selectedMission} 
+            onBack={() => setActiveView('overview')} 
+          />
+        ) : null;
       default:
         return (
           <div className="space-y-6">
@@ -120,7 +134,11 @@ export const Dashboard = ({ onLogout }: DashboardProps) => {
               <CardContent>
                 <div className="space-y-4">
                   {activeMissions.map((mission) => (
-                    <div key={mission.id} className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg border border-border">
+                    <div 
+                      key={mission.id} 
+                      className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg border border-border cursor-pointer hover:bg-secondary/70 transition-all duration-200 hover:border-primary/50"
+                      onClick={() => handleMissionClick(mission)}
+                    >
                       <div className="flex items-center space-x-4">
                         <div className="status-indicator status-active" />
                         <div>
@@ -162,7 +180,7 @@ export const Dashboard = ({ onLogout }: DashboardProps) => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Shield className="h-8 w-8 text-primary" />
+              <img src="/military-logo.svg" alt="Logo Militaire" className="h-10 w-10" />
               <div>
                 <h1 className="command-header text-xl">CENTRE DE COMMANDEMENT</h1>
                 <p className="text-sm text-muted-foreground">Opérations Tactiques</p>
