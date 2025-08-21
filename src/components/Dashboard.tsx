@@ -16,7 +16,7 @@ import {
   Target
 } from 'lucide-react';
 import { CreateMission } from './CreateMission';
-import { MissionMap } from './MissionMap';
+import MissionMap from './MissionMap';
 import { AlertsPanel } from './AlertsPanel';
 import { MissionDetails } from './MissionDetails';
 
