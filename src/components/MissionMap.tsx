@@ -15,6 +15,7 @@ import {
   Clock
 } from 'lucide-react';
 
+
 // Interfaces
 interface Position {
   lat: number;
@@ -46,6 +47,8 @@ interface MissionObjective {
   status: 'pending' | 'in_progress' | 'completed';
   description: string;
 }
+
+
 
 const MissionMap: React.FC = () => {
   // États
@@ -219,6 +222,10 @@ const MissionMap: React.FC = () => {
     setShowTokenInput(false);
   };
 
+
+
+
+
   // Hook pour la gestion du mode temps réel
   useEffect(() => {
     if (isRealTimeEnabled) {
@@ -287,6 +294,7 @@ const MissionMap: React.FC = () => {
                 >
                   Mode Avancé
                 </Button>
+
               </div>
             </div>
           </CardHeader>
@@ -558,6 +566,7 @@ const MissionMap: React.FC = () => {
                 <Target className="h-4 w-4 mr-2" />
                 Mesure
               </Button>
+
             </div>
           </div>
         </CardHeader>

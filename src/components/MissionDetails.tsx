@@ -16,8 +16,10 @@ import {
   CheckCircle,
   Calendar,
   FileText,
-  Settings
+  Settings,
+  Download
 } from 'lucide-react';
+import jsPDF from 'jspdf';
 
 interface Mission {
   id: string;
@@ -39,6 +41,36 @@ interface Mission {
 interface MissionDetailsProps {
   mission: Mission;
   onBack: () => void;
+}
+
+interface MissionReport {
+  missionId: string;
+  missionName: string;
+  commander: string;
+  status: string;
+  priority: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  description: string;
+  soldiers: Array<{
+    id: string;
+    name: string;
+    status: string;
+    position: string;
+    lastContact: string;
+  }>;
+  objectives: string[];
+  equipment: string[];
+  transmissionMode: string;
+  progress: number;
+  summary: {
+    totalSoldiers: number;
+    activeSoldiers: number;
+    alertSoldiers: number;
+    completedObjectives: number;
+    totalObjectives: number;
+  };
 }
 
 const mockMissionDetails: Mission = {
@@ -98,6 +130,198 @@ export const MissionDetails = ({ mission, onBack }: MissionDetailsProps) => {
       case 'low': return 'text-success border-success';
       default: return 'text-muted-foreground border-muted-foreground';
     }
+  };
+
+  // Fonction pour générer le rapport de mission
+  const generateMissionReport = (): MissionReport => {
+    const activeSoldiers = soldierUnits.filter(s => s.status === 'active').length;
+    const alertSoldiers = soldierUnits.filter(s => s.status === 'alert').length;
+    const completedObjectives = Math.floor((missionData.objectives?.length || 0) * (missionData.progress || 0) / 100);
+    
+    return {
+      missionId: missionData.id,
+      missionName: missionData.name,
+      commander: 'Commandant Martin',
+      status: missionData.status,
+      priority: missionData.priority || 'medium',
+      startDate: missionData.startDate || new Date().toISOString(),
+      endDate: missionData.endDate || new Date().toISOString(),
+      location: missionData.location,
+      description: missionData.description || '',
+      soldiers: soldierUnits,
+      objectives: missionData.objectives || [],
+      equipment: missionData.equipment || [],
+      transmissionMode: missionData.transmissionMode || 'Standard',
+      progress: missionData.progress || 0,
+      summary: {
+        totalSoldiers: soldierUnits.length,
+        activeSoldiers,
+        alertSoldiers,
+        completedObjectives,
+        totalObjectives: missionData.objectives?.length || 0
+      }
+    };
+  };
+
+  // Fonction pour télécharger le rapport PDF
+  const downloadMissionReport = () => {
+    const report = generateMissionReport();
+    const pdf = new jsPDF();
+    
+    // Configuration
+    const pageWidth = pdf.internal.pageSize.width;
+    const margin = 20;
+    let yPosition = 30;
+    
+    // En-tête
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('RAPPORT DE MISSION', pageWidth / 2, yPosition, { align: 'center' });
+    
+    yPosition += 15;
+    pdf.setFontSize(14);
+    pdf.text(`${report.missionName} (${report.missionId})`, pageWidth / 2, yPosition, { align: 'center' });
+    
+    yPosition += 20;
+    
+    // Informations générales
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('INFORMATIONS GENERALES', margin, yPosition);
+    yPosition += 10;
+    
+    pdf.setFont('helvetica', 'normal');
+    const generalInfo = [
+      `Commandant: ${report.commander}`,
+      `Statut: ${report.status.toUpperCase()}`,
+      `Priorite: ${report.priority.toUpperCase()}`,
+      `Localisation: ${report.location}`,
+      `Mode de transmission: ${report.transmissionMode}`,
+      `Progression: ${report.progress}%`,
+      `Date de debut: ${new Date(report.startDate).toLocaleString('fr-FR')}`,
+      `Date de fin: ${new Date(report.endDate).toLocaleString('fr-FR')}`
+    ];
+    
+    generalInfo.forEach(info => {
+      pdf.text(info, margin, yPosition);
+      yPosition += 7;
+    });
+    
+    yPosition += 10;
+    
+    // Résumé exécutif
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('RESUME EXECUTIF', margin, yPosition);
+    yPosition += 10;
+    
+    pdf.setFont('helvetica', 'normal');
+    const summary = [
+      `Soldats deployes: ${report.summary.totalSoldiers}`,
+      `Soldats actifs: ${report.summary.activeSoldiers}`,
+      `Soldats en alerte: ${report.summary.alertSoldiers}`,
+      `Objectifs completes: ${report.summary.completedObjectives}/${report.summary.totalObjectives}`
+    ];
+    
+    summary.forEach(item => {
+      pdf.text(item, margin, yPosition);
+      yPosition += 7;
+    });
+    
+    yPosition += 10;
+    
+    // Description
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('DESCRIPTION DE LA MISSION', margin, yPosition);
+    yPosition += 10;
+    
+    pdf.setFont('helvetica', 'normal');
+    const splitDescription = pdf.splitTextToSize(report.description, pageWidth - 2 * margin);
+    pdf.text(splitDescription, margin, yPosition);
+    yPosition += splitDescription.length * 7 + 10;
+    
+    // Nouvelle page si nécessaire
+    if (yPosition > 250) {
+      pdf.addPage();
+      yPosition = 30;
+    }
+    
+    // Unités déployées
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('UNITES DEPLOYEES', margin, yPosition);
+    yPosition += 10;
+    
+    pdf.setFont('helvetica', 'normal');
+    report.soldiers.forEach((soldier, index) => {
+      if (yPosition > 270) {
+        pdf.addPage();
+        yPosition = 30;
+      }
+      
+      pdf.text(`${index + 1}. ${soldier.id} - ${soldier.name}`, margin, yPosition);
+      yPosition += 7;
+      pdf.text(`   Statut: ${soldier.status.toUpperCase()} | Position: ${soldier.position}`, margin, yPosition);
+      yPosition += 7;
+      pdf.text(`   Dernier contact: ${soldier.lastContact}`, margin, yPosition);
+      yPosition += 10;
+    });
+    
+    // Objectifs
+    if (yPosition > 200) {
+      pdf.addPage();
+      yPosition = 30;
+    }
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('OBJECTIFS DE MISSION', margin, yPosition);
+    yPosition += 10;
+    
+    pdf.setFont('helvetica', 'normal');
+    report.objectives.forEach((objective, index) => {
+      if (yPosition > 270) {
+        pdf.addPage();
+        yPosition = 30;
+      }
+      
+      const status = index < report.summary.completedObjectives ? '[COMPLETE]' : '[EN COURS]';
+      pdf.text(`${index + 1}. ${status} ${objective}`, margin, yPosition);
+      yPosition += 10;
+    });
+    
+    // Équipement
+    if (yPosition > 200) {
+      pdf.addPage();
+      yPosition = 30;
+    }
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('EQUIPEMENT DEPLOYE', margin, yPosition);
+    yPosition += 10;
+    
+    pdf.setFont('helvetica', 'normal');
+    report.equipment.forEach((item, index) => {
+      if (yPosition > 270) {
+        pdf.addPage();
+        yPosition = 30;
+      }
+      
+      pdf.text(`${index + 1}. ${item}`, margin, yPosition);
+      yPosition += 7;
+    });
+    
+    // Pied de page sur toutes les pages
+    const pageCount = pdf.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      pdf.setPage(i);
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Page ${i}/${pageCount}`, pageWidth - margin, pdf.internal.pageSize.height - 10, { align: 'right' });
+      pdf.text('CONFIDENTIEL - USAGE MILITAIRE UNIQUEMENT', margin, pdf.internal.pageSize.height - 10);
+      pdf.text(`Genere le: ${new Date().toLocaleString('fr-FR')}`, pageWidth / 2, pdf.internal.pageSize.height - 10, { align: 'center' });
+    }
+    
+    // Téléchargement
+    const fileName = `Rapport_Mission_${report.missionId}_${new Date().toISOString().split('T')[0]}.pdf`;
+    pdf.save(fileName);
   };
 
   const renderTabContent = () => {
@@ -308,14 +532,24 @@ export const MissionDetails = ({ mission, onBack }: MissionDetailsProps) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center space-x-4">
-        <Button variant="ghost" onClick={onBack} className="p-2">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h2 className="command-header text-xl">{missionData.name}</h2>
-          <p className="text-sm text-muted-foreground">{missionData.id}</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" onClick={onBack} className="p-2">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h2 className="command-header text-xl">{missionData.name}</h2>
+            <p className="text-sm text-muted-foreground">{missionData.id}</p>
+          </div>
         </div>
+        <Button 
+          onClick={downloadMissionReport}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+          size="sm"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Rapport PDF
+        </Button>
       </div>
 
       {/* Tabs */}
