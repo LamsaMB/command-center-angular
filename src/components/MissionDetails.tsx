@@ -14,6 +14,7 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle,
+  CheckCircle2,
   Calendar,
   FileText,
   Settings,
@@ -110,6 +111,7 @@ const soldierUnits = [
 
 export const MissionDetails = ({ mission, onBack }: MissionDetailsProps) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'units' | 'objectives' | 'equipment'>('overview');
+  const [missionCompleted, setMissionCompleted] = useState(false);
   
   // Utiliser les données mockées pour la démonstration
   const missionData = { ...mockMissionDetails, ...mission };
@@ -530,6 +532,15 @@ export const MissionDetails = ({ mission, onBack }: MissionDetailsProps) => {
     pdf.save(fileName);
   };
 
+  // Fonction pour terminer la mission
+  const completeMission = () => {
+    if (window.confirm('Êtes-vous sûr de vouloir marquer cette mission comme terminée ?')) {
+      setMissionCompleted(true);
+      // Ici vous pourriez ajouter la logique pour mettre à jour le statut dans votre base de données
+      console.log(`Mission ${missionData.id} marquée comme terminée`);
+    }
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
@@ -748,14 +759,25 @@ export const MissionDetails = ({ mission, onBack }: MissionDetailsProps) => {
             <p className="text-sm text-muted-foreground">{missionData.id}</p>
           </div>
         </div>
-        <Button 
-          onClick={downloadMissionReport}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-          size="sm"
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Rapport PDF
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Button 
+            onClick={downloadMissionReport}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            size="sm"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Rapport PDF
+          </Button>
+          <Button 
+            onClick={completeMission}
+            disabled={missionCompleted || missionData.status === 'completed'}
+            className="bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-400"
+            size="sm"
+          >
+            <CheckCircle2 className="h-4 w-4 mr-2" />
+            {missionCompleted || missionData.status === 'completed' ? 'Mission Terminée' : 'Terminer Mission'}
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
