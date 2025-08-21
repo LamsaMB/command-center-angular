@@ -168,155 +168,361 @@ export const MissionDetails = ({ mission, onBack }: MissionDetailsProps) => {
     const report = generateMissionReport();
     const pdf = new jsPDF();
     
-    // Configuration
+    // Configuration et couleurs
     const pageWidth = pdf.internal.pageSize.width;
+    const pageHeight = pdf.internal.pageSize.height;
     const margin = 20;
     let yPosition = 30;
     
-    // En-tête
-    pdf.setFontSize(20);
+    // Couleurs
+    const primaryColor: [number, number, number] = [41, 128, 185]; // Bleu militaire
+    const secondaryColor: [number, number, number] = [52, 73, 94]; // Gris foncé
+    const accentColor: [number, number, number] = [231, 76, 60]; // Rouge pour les alertes
+    const successColor: [number, number, number] = [39, 174, 96]; // Vert pour les succès
+    const warningColor: [number, number, number] = [243, 156, 18]; // Orange pour les avertissements
+    
+    // Fonction pour dessiner une section avec bordure
+    const drawSection = (title: string, y: number, height: number = 15) => {
+      // Bordure de section
+      pdf.setDrawColor(...primaryColor);
+      pdf.setLineWidth(0.5);
+      pdf.rect(margin - 5, y - 5, pageWidth - 2 * margin + 10, height);
+      
+      // Fond de titre
+      pdf.setFillColor(...primaryColor);
+      pdf.rect(margin - 5, y - 5, pageWidth - 2 * margin + 10, 8, 'F');
+      
+      // Titre en blanc
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(title, margin, y);
+      
+      // Reset couleur texte
+      pdf.setTextColor(0, 0, 0);
+      
+      return y + 12;
+    };
+    
+    // Fonction pour dessiner un badge de statut
+    const drawStatusBadge = (status: string, x: number, y: number) => {
+      let color = secondaryColor;
+      if (status.toLowerCase() === 'active' || status.toLowerCase() === 'completed') {
+        color = successColor;
+      } else if (status.toLowerCase() === 'alert' || status.toLowerCase() === 'high') {
+        color = accentColor;
+      } else if (status.toLowerCase() === 'medium') {
+        color = warningColor;
+      }
+      
+      pdf.setFillColor(...color);
+      pdf.roundedRect(x, y - 3, 25, 6, 2, 2, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(status.toUpperCase(), x + 2, y + 1);
+      pdf.setTextColor(0, 0, 0);
+    };
+    
+    // En-tête avec design amélioré
+    // Bannière supérieure
+    pdf.setFillColor(...primaryColor);
+    pdf.rect(0, 0, pageWidth, 25, 'F');
+    
+    // Logo/Emblème (simulé avec un cercle)
+    pdf.setFillColor(255, 255, 255);
+    pdf.circle(25, 12.5, 8, 'F');
+    pdf.setTextColor(...primaryColor);
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
-    pdf.text('RAPPORT DE MISSION', pageWidth / 2, yPosition, { align: 'center' });
+    pdf.text('*', 22, 15);
+    
+    // Titre principal
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(18);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('RAPPORT DE MISSION TACTIQUE', pageWidth / 2, 15, { align: 'center' });
+    
+    yPosition = 35;
+    
+    // Sous-titre avec encadré
+    pdf.setTextColor(0, 0, 0);
+    pdf.setDrawColor(...primaryColor);
+    pdf.setLineWidth(1);
+    pdf.rect(margin, yPosition, pageWidth - 2 * margin, 20);
+    pdf.setFillColor(245, 245, 245);
+    pdf.rect(margin, yPosition, pageWidth - 2 * margin, 20, 'F');
+    
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${report.missionName}`, pageWidth / 2, yPosition + 8, { align: 'center' });
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`ID Mission: ${report.missionId}`, pageWidth / 2, yPosition + 15, { align: 'center' });
+    
+    yPosition += 35;
+    
+    // Section Informations générales
+    yPosition = drawSection('>> INFORMATIONS GENERALES', yPosition, 70);
+    
+    // Grille d'informations avec icônes
+    const infoItems = [
+      { icon: '>', label: 'Commandant', value: report.commander },
+      { icon: '*', label: 'Statut', value: report.status.toUpperCase(), badge: true },
+      { icon: '!', label: 'Priorite', value: report.priority.toUpperCase(), badge: true },
+      { icon: '+', label: 'Localisation', value: report.location },
+      { icon: '~', label: 'Transmission', value: report.transmissionMode },
+      { icon: '%', label: 'Progression', value: `${report.progress}%` },
+      { icon: '-', label: 'Debut', value: new Date(report.startDate).toLocaleString('fr-FR') },
+      { icon: '=', label: 'Fin', value: new Date(report.endDate).toLocaleString('fr-FR') }
+    ];
+    
+    let col = 0;
+    infoItems.forEach((item, index) => {
+      const x = margin + (col * (pageWidth - 2 * margin) / 2);
+      const maxWidth = (pageWidth - 2 * margin) / 2 - 10;
+      
+      pdf.setFontSize(8);
+      pdf.text(item.icon, x, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(item.label + ':', x + 8, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      
+      if (item.badge) {
+        drawStatusBadge(item.value, x + 45, yPosition);
+      } else {
+        const splitValue = pdf.splitTextToSize(item.value, maxWidth - 45);
+        pdf.text(splitValue, x + 45, yPosition);
+      }
+      
+      col = (col + 1) % 2;
+      if (col === 0) yPosition += 10;
+    });
     
     yPosition += 15;
-    pdf.setFontSize(14);
-    pdf.text(`${report.missionName} (${report.missionId})`, pageWidth / 2, yPosition, { align: 'center' });
     
-    yPosition += 20;
+    // Section Résumé exécutif avec graphiques
+    yPosition = drawSection('>> RESUME EXECUTIF', yPosition, 60);
     
-    // Informations générales
-    pdf.setFontSize(12);
+    // Barre de progression
+    const progressWidth = 100;
+    const progressHeight = 8;
+    pdf.setDrawColor(...secondaryColor);
+    pdf.rect(margin, yPosition, progressWidth, progressHeight);
+    pdf.setFillColor(...successColor);
+    pdf.rect(margin, yPosition, (progressWidth * report.progress) / 100, progressHeight, 'F');
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
-    pdf.text('INFORMATIONS GENERALES', margin, yPosition);
-    yPosition += 10;
+    pdf.text(`Progression: ${report.progress}%`, margin + progressWidth + 10, yPosition + 5);
     
-    pdf.setFont('helvetica', 'normal');
-    const generalInfo = [
-      `Commandant: ${report.commander}`,
-      `Statut: ${report.status.toUpperCase()}`,
-      `Priorite: ${report.priority.toUpperCase()}`,
-      `Localisation: ${report.location}`,
-      `Mode de transmission: ${report.transmissionMode}`,
-      `Progression: ${report.progress}%`,
-      `Date de debut: ${new Date(report.startDate).toLocaleString('fr-FR')}`,
-      `Date de fin: ${new Date(report.endDate).toLocaleString('fr-FR')}`
+    yPosition += 15;
+    
+    // Statistiques avec icônes colorées
+    const stats = [
+      { icon: '#', label: 'Soldats deployes', value: report.summary.totalSoldiers, color: primaryColor },
+      { icon: '+', label: 'Soldats actifs', value: report.summary.activeSoldiers, color: successColor },
+      { icon: '!', label: 'Soldats en alerte', value: report.summary.alertSoldiers, color: warningColor },
+      { icon: '*', label: 'Objectifs completes', value: `${report.summary.completedObjectives}/${report.summary.totalObjectives}`, color: primaryColor }
     ];
     
-    generalInfo.forEach(info => {
-      pdf.text(info, margin, yPosition);
-      yPosition += 7;
+    stats.forEach((stat, index) => {
+      const x = margin + (index % 2) * (pageWidth - 2 * margin) / 2;
+      const y = yPosition + Math.floor(index / 2) * 14;
+      const maxLabelWidth = (pageWidth - 2 * margin) / 2 - 60;
+      
+      pdf.setTextColor(...stat.color);
+      pdf.setFontSize(9);
+      pdf.text(stat.icon, x, y);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      const splitLabel = pdf.splitTextToSize(`${stat.label}: `, maxLabelWidth);
+      pdf.text(splitLabel, x + 10, y);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(stat.value.toString(), x + 70, y);
     });
     
-    yPosition += 10;
+    yPosition += 30;
     
-    // Résumé exécutif
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('RESUME EXECUTIF', margin, yPosition);
-    yPosition += 10;
+    // Description avec encadré
+    if (yPosition > 190) {
+      pdf.addPage();
+      yPosition = 30;
+    }
     
-    pdf.setFont('helvetica', 'normal');
-    const summary = [
-      `Soldats deployes: ${report.summary.totalSoldiers}`,
-      `Soldats actifs: ${report.summary.activeSoldiers}`,
-      `Soldats en alerte: ${report.summary.alertSoldiers}`,
-      `Objectifs completes: ${report.summary.completedObjectives}/${report.summary.totalObjectives}`
-    ];
-    
-    summary.forEach(item => {
-      pdf.text(item, margin, yPosition);
-      yPosition += 7;
-    });
-    
-    yPosition += 10;
-    
-    // Description
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('DESCRIPTION DE LA MISSION', margin, yPosition);
-    yPosition += 10;
+    yPosition = drawSection('>> DESCRIPTION DE LA MISSION', yPosition, 50);
     
     pdf.setFont('helvetica', 'normal');
-    const splitDescription = pdf.splitTextToSize(report.description, pageWidth - 2 * margin);
-    pdf.text(splitDescription, margin, yPosition);
-    yPosition += splitDescription.length * 7 + 10;
+    pdf.setFontSize(8);
+    const splitDescription = pdf.splitTextToSize(report.description, pageWidth - 2 * margin - 12);
+    const descHeight = Math.max(20, splitDescription.length * 3 + 8);
+    
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.5);
+    pdf.rect(margin, yPosition, pageWidth - 2 * margin, descHeight);
+    pdf.setFillColor(250, 250, 250);
+    pdf.rect(margin, yPosition, pageWidth - 2 * margin, descHeight, 'F');
+    
+    pdf.text(splitDescription, margin + 5, yPosition + 6);
+    
+    yPosition += descHeight + 12;
     
     // Nouvelle page si nécessaire
-    if (yPosition > 250) {
+    if (yPosition > 190) {
       pdf.addPage();
       yPosition = 30;
     }
     
-    // Unités déployées
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('UNITES DEPLOYEES', margin, yPosition);
-    yPosition += 10;
+    // Section Unités déployées
+    yPosition = drawSection('>> UNITES DEPLOYEES', yPosition, 100);
     
-    pdf.setFont('helvetica', 'normal');
     report.soldiers.forEach((soldier, index) => {
-      if (yPosition > 270) {
+      if (yPosition > 235) {
         pdf.addPage();
         yPosition = 30;
       }
       
-      pdf.text(`${index + 1}. ${soldier.id} - ${soldier.name}`, margin, yPosition);
-      yPosition += 7;
-      pdf.text(`   Statut: ${soldier.status.toUpperCase()} | Position: ${soldier.position}`, margin, yPosition);
-      yPosition += 7;
-      pdf.text(`   Dernier contact: ${soldier.lastContact}`, margin, yPosition);
-      yPosition += 10;
+      // Encadré pour chaque soldat
+      pdf.setDrawColor(220, 220, 220);
+      pdf.setLineWidth(0.3);
+      pdf.rect(margin, yPosition - 2, pageWidth - 2 * margin, 18);
+      
+      // Numéro avec cercle
+      pdf.setFillColor(...primaryColor);
+      pdf.circle(margin + 8, yPosition + 5, 3.5, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text((index + 1).toString(), margin + 6.5, yPosition + 7);
+      
+      // Informations du soldat
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      const soldierName = pdf.splitTextToSize(`${soldier.id} - ${soldier.name}`, pageWidth - margin - 90);
+      pdf.text(soldierName, margin + 18, yPosition + 3);
+      
+      // Badge de statut
+      drawStatusBadge(soldier.status, pageWidth - margin - 40, yPosition + 5);
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(6);
+      const positionText = pdf.splitTextToSize(`+ Position: ${soldier.position}`, pageWidth - margin - 50);
+      const contactText = pdf.splitTextToSize(`~ Dernier contact: ${soldier.lastContact}`, pageWidth - margin - 50);
+      pdf.text(positionText, margin + 18, yPosition + 9);
+      pdf.text(contactText, margin + 18, yPosition + 13);
+      
+      yPosition += 22;
     });
     
-    // Objectifs
-    if (yPosition > 200) {
+    // Section Objectifs
+    if (yPosition > 170) {
       pdf.addPage();
       yPosition = 30;
     }
     
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('OBJECTIFS DE MISSION', margin, yPosition);
-    yPosition += 10;
+    yPosition = drawSection('>> OBJECTIFS DE MISSION', yPosition, 60);
     
-    pdf.setFont('helvetica', 'normal');
     report.objectives.forEach((objective, index) => {
-      if (yPosition > 270) {
+      if (yPosition > 240) {
         pdf.addPage();
         yPosition = 30;
       }
       
-      const status = index < report.summary.completedObjectives ? '[COMPLETE]' : '[EN COURS]';
-      pdf.text(`${index + 1}. ${status} ${objective}`, margin, yPosition);
-      yPosition += 10;
+      const isCompleted = index < report.summary.completedObjectives;
+      const statusIcon = isCompleted ? '[OK]' : '[--]';
+      const statusColor = isCompleted ? successColor : warningColor;
+      
+      // Ligne avec icône de statut
+      pdf.setTextColor(...statusColor);
+      pdf.setFontSize(8);
+      pdf.text(statusIcon, margin, yPosition);
+      
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      const objectiveText = pdf.splitTextToSize(`${index + 1}. ${objective}`, pageWidth - 2 * margin - 60);
+      pdf.text(objectiveText, margin + 12, yPosition);
+      
+      // Badge de statut
+      const statusText = isCompleted ? 'COMPLETE' : 'EN COURS';
+      drawStatusBadge(statusText, pageWidth - margin - 40, yPosition - 2);
+      
+      const lineHeight = Math.max(10, objectiveText.length * 3 + 2);
+      yPosition += lineHeight;
     });
     
-    // Équipement
-    if (yPosition > 200) {
+    // Section Équipement
+    if (yPosition > 170) {
       pdf.addPage();
       yPosition = 30;
     }
     
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('EQUIPEMENT DEPLOYE', margin, yPosition);
-    yPosition += 10;
+    yPosition = drawSection('>> EQUIPEMENT DEPLOYE', yPosition, 60);
     
-    pdf.setFont('helvetica', 'normal');
     report.equipment.forEach((item, index) => {
-      if (yPosition > 270) {
+      if (yPosition > 250) {
         pdf.addPage();
         yPosition = 30;
       }
       
-      pdf.text(`${index + 1}. ${item}`, margin, yPosition);
-      yPosition += 7;
+      // Puce avec icône
+      pdf.setTextColor(...primaryColor);
+      pdf.setFontSize(8);
+      pdf.text('*', margin, yPosition);
+      
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      const equipmentText = pdf.splitTextToSize(`${item}`, pageWidth - 2 * margin - 15);
+      pdf.text(equipmentText, margin + 8, yPosition);
+      
+      const lineHeight = Math.max(8, equipmentText.length * 2.5 + 1);
+      yPosition += lineHeight;
     });
     
-    // Pied de page sur toutes les pages
+    // Signature et validation
+    yPosition += 15;
+    if (yPosition > 220) {
+      pdf.addPage();
+      yPosition = 30;
+    }
+    
+    // Encadré de signature
+    pdf.setDrawColor(...primaryColor);
+    pdf.setLineWidth(1);
+    pdf.rect(margin, yPosition, pageWidth - 2 * margin, 30);
+    pdf.setFillColor(248, 249, 250);
+    pdf.rect(margin, yPosition, pageWidth - 2 * margin, 30, 'F');
+    
+    pdf.setTextColor(...primaryColor);
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('VALIDATION ET SIGNATURE', margin + 5, yPosition + 8);
+    
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.text(`Commandant: ${report.commander}`, margin + 5, yPosition + 16);
+    pdf.text(`Date de génération: ${new Date().toLocaleString('fr-FR')}`, margin + 5, yPosition + 22);
+    pdf.text('Signature: ________________________', pageWidth - margin - 80, yPosition + 22);
+    
+    // Pied de page amélioré sur toutes les pages
     const pageCount = pdf.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       pdf.setPage(i);
-      pdf.setFontSize(8);
+      
+      // Ligne de séparation
+      pdf.setDrawColor(...primaryColor);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+      
+      // Informations du pied de page
+      pdf.setTextColor(...secondaryColor);
+      pdf.setFontSize(7);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`Page ${i}/${pageCount}`, pageWidth - margin, pdf.internal.pageSize.height - 10, { align: 'right' });
-      pdf.text('CONFIDENTIEL - USAGE MILITAIRE UNIQUEMENT', margin, pdf.internal.pageSize.height - 10);
-      pdf.text(`Genere le: ${new Date().toLocaleString('fr-FR')}`, pageWidth / 2, pdf.internal.pageSize.height - 10, { align: 'center' });
+      pdf.text(`Page ${i}/${pageCount}`, pageWidth - margin, pageHeight - 12, { align: 'right' });
+      pdf.text('[CONFIDENTIEL] - USAGE MILITAIRE UNIQUEMENT', margin, pageHeight - 12);
+      pdf.text(`[DATE] Genere le: ${new Date().toLocaleString('fr-FR')}`, pageWidth / 2, pageHeight - 12, { align: 'center' });
     }
     
     // Téléchargement
